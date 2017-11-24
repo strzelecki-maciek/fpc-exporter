@@ -1,0 +1,18 @@
+{
+  "queryInterval": 30,
+  "targets": [
+  {
+    "agent": "checker",
+    "ip":"10.10.0.100",
+    "url": "https://www.google.pl"
+  },
+  {
+    "agent": "checker",
+    "ip":"10.10.0.100",
+    "url": "https://www.wp.pl"
+  }
+
+  ]
+}
+
+
