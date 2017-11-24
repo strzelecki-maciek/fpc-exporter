@@ -80,6 +80,7 @@ func getContents(url Target) (string, string, error) {
 
     c1 := make(chan ContentsResult, 1)
     go func() {
+      //fmt.Println("Trying: " + url.URL + "\n")
       req, err := http.NewRequest("GET", url.URL, nil)
       if err != nil {
           fmt.Printf("%s", err)
@@ -126,8 +127,8 @@ func checkPage(target Target) (string) {
 func doStuff(parent Target) {
   parentContents := checkPage(parent)
   childUrls := xurls.Strict().FindAllString(parentContents, -1)
-  for _, childUrl := range childUrls[:5] {
-    if !strings.Contains(childUrl, "http://www.w3.org") && childUrl != parent.URL {
+  for _, childUrl := range childUrls[:10] {
+    if !strings.Contains(childUrl, "http://www.w3.org") && childUrl != parent.URL && childUrl != "" {
     checkPage(Target{URL:childUrl, Agent:parent.Agent, Parent:parent.URL})
     }
   }
