@@ -89,13 +89,15 @@ func getContents(t Target) (string, string, error) {
 
     c1 := make(chan ContentsResult, 1)
     go func() {
-      //fmt.Println("Trying: " + url.URL + "\n")
-      req, err := http.NewRequest("GET", t.Scheme + "://" + t.IP + t.Uri, nil)
+      url := t.Scheme + "://" + t.IP + t.Uri
+      //fmt.Println("Trying: " + url + "  with host header: " + t.Host + "\n")
+      req, err := http.NewRequest("GET", url, nil)
       if err != nil {
           fmt.Printf("%s", err)
       } else {
         req.Header.Set("User-Agent", t.Agent)
         req.Header.Set("Host", t.Host)
+        req.Host = t.Host
         response, err := client.Do(req)
         if err != nil {
             fmt.Printf("%s", err)
