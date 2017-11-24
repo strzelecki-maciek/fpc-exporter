@@ -7,14 +7,15 @@ import (
   "errors"
 	"net/http"
   "fmt"
-	"mvdan.cc/xurls"
+	_ "mvdan.cc/xurls"
 	_ "reflect"
   "strconv"
-  "strings"
+  _ "strings"
 	"time"
   "sync"
   "os"
   "log"
+  "crypto/tls"
   "encoding/json"
   "github.com/prometheus/client_golang/prometheus"
   "github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,7 +24,10 @@ import (
 
 type Target struct {
   Agent string `json:"agent"`
-  URL string `json:"url"`
+  IP string `json:"ip"`
+  Host string `json:"host"`
+  Uri string `json:"uri"`
+  Scheme string `json:"scheme"`
   Parent string
 }
 
@@ -73,19 +77,25 @@ func loadConfig(path string) (Configuration, error) {
   return configuration, err
 }
 
-func getContents(url Target) (string, string, error) {
+func getContents(t Target) (string, string, error) {
     var contents []byte
     statusCode := "0"
-    client := &http.Client{}
+
+    tr := &http.Transport{
+      TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+    }
+
+    client := &http.Client{Transport: tr}
 
     c1 := make(chan ContentsResult, 1)
     go func() {
       //fmt.Println("Trying: " + url.URL + "\n")
-      req, err := http.NewRequest("GET", url.URL, nil)
+      req, err := http.NewRequest("GET", t.Scheme + "://" + t.IP + t.Uri, nil)
       if err != nil {
           fmt.Printf("%s", err)
       } else {
-        req.Header.Set("User-Agent", url.Agent)
+        req.Header.Set("User-Agent", t.Agent)
+        req.Header.Set("Host", t.Host)
         response, err := client.Do(req)
         if err != nil {
             fmt.Printf("%s", err)
@@ -110,28 +120,30 @@ func getContents(url Target) (string, string, error) {
     }
 }
 
-func checkPage(target Target) (string) {
+func checkPage(t Target) (string) {
   time_start := time.Now()
-  if target.Parent == "" {
-    target.Parent = "none"
+  if t.Parent == "" {
+    t.Parent = "none"
   }
-  c, statusCode, err := getContents(target)
+  page := t.Scheme + "://" + t.Host + t.Uri
+  c, statusCode, err := getContents(t)
   if statusCode != "200" || err != nil {
-    fpcLoadFailure.With(prometheus.Labels{"page": target.URL, "statusCode": statusCode, "parent": target.Parent}).Inc()
+    fpcLoadFailure.With(prometheus.Labels{"page": page, "statusCode": statusCode, "parent": t.Parent}).Inc()
   }
-  fpcLoadTime.With(prometheus.Labels{"page": target.URL, "statusCode": statusCode, "parent": target.Parent}).Set(time.Since(time_start).Seconds())
+  fpcLoadTime.With(prometheus.Labels{"page": page, "statusCode": statusCode, "parent": t.Parent}).Set(time.Since(time_start).Seconds())
   return c
 }
 
 
 func doStuff(parent Target) {
-  parentContents := checkPage(parent)
-  childUrls := xurls.Strict().FindAllString(parentContents, -1)
-  for _, childUrl := range childUrls[:10] {
-    if !strings.Contains(childUrl, "http://www.w3.org") && childUrl != parent.URL && childUrl != "" {
-    checkPage(Target{URL:childUrl, Agent:parent.Agent, Parent:parent.URL})
-    }
-  }
+  checkPage(parent)
+  //parentContents := checkPage(parent)
+  //childUrls := xurls.Strict().FindAllString(parentContents, -1)
+  //for _, childUrl := range childUrls[:10] {
+  //  if !strings.Contains(childUrl, "http://www.w3.org") && childUrl != parent.Host + parent.Uri && childUrl != "" {
+  //  checkPage(Target{URL:childUrl, Agent:parent.Agent, Parent:parent.URL})
+  //  }
+  //}
 }
 
 func startChecking(configuration Configuration) {
@@ -166,7 +178,7 @@ func main() {
 
   configuration, err := loadConfig(*configPath)
   if err != nil {
-    fmt.Println("Error :", err)
+    fmt.Println("Error while parsing config: ", err)
     os.Exit(1)
   }
 
