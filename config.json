@@ -3,15 +3,18 @@
   "targets": [
   {
     "agent": "checker",
-    "ip":"10.10.0.100",
-    "url": "https://www.google.pl"
+    "scheme": "http",
+    "ip": "10.10.0.1",
+    "host": "myhost.com",
+    "uri": "/someurl?with=params"
   },
   {
     "agent": "checker",
-    "ip":"10.10.0.100",
-    "url": "https://www.wp.pl"
+    "scheme": "http",
+    "ip": "10.10.0.2",
+    "host": "myotherhost",
+    "uri": "/anotherurl"
   }
-
   ]
 }
 
