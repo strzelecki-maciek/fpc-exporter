@@ -13,8 +13,6 @@ import (
 	"mvdan.cc/xurls"
 	"net/http"
 	"os"
-	_ "os"
-	_ "reflect"
 	"strconv"
 	"strings"
 	"sync"
