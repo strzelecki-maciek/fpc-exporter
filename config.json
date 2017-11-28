@@ -9,11 +9,7 @@
     "uri": "/someurl?with=params"
   },
   {
-    "agent": "checker",
-    "scheme": "http",
-    "ip": "10.10.0.2",
-    "host": "myotherhost",
-    "uri": "/anotherurl"
+    "url": "https://this.will.work.too"
   }
   ]
 }
